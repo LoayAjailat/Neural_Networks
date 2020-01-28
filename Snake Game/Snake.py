@@ -18,10 +18,12 @@ class Snake():
 		self.red   = (255, 0, 0)
 		self.white = (255, 255, 255)
 		self.black = (0, 0, 0)
+		self.blue  = (61, 112, 240)
 		self.snake_head = [250, 250]
 		self.snake_pos  = [[250,250], [240,250], [230,250]] #Starting length of the snake is 3 units where each unit is a 10×10 block
 		self.apple_position = [random.randrange(1, self.screen_width/10)*10, random.randrange(10, self.screen_height/10)*10] #Random location
 		self.quitGame = False
+		self.crashed = False
 		self.prevButton = 1
 		self.left  = 0
 		self.right = 1
@@ -44,7 +46,7 @@ class Snake():
 			x = pos[0]
 			y = pos[1]
 			rect = pygame.Rect(x, y, w, h)
-			pygame.draw.rect(self.screen_Main, self.red, rect)
+			pygame.draw.rect(self.screen_Main, self.blue, rect)
 
 	def BoundaryCollision(self):
 		if self.snake_head[0] >= self.screen_width or self.snake_head[0] < 0 or self.snake_head[1] >= self.screen_height or self.snake_head[1] < 0:
@@ -109,40 +111,51 @@ class Snake():
 		TextRect.center = (int(self.screen_width/2), int(self.screen_height/2))
 		self.screen_Main.blit(TextSurf, TextRect)
 		pygame.display.update()
-		time.sleep(2)
+		# time.sleep(2)
 
 	def RunGame(self):
 		prevDirection = 1
 		currentDirection = 1
 
 		while not self.quitGame:
+			while not self.crashed:
+				# PyGame event interaction
+				for event in pygame.event.get():
+					# Quits program
+					if event.type == pygame.QUIT:
+						self.crashed = True
+						self.quitGame = True
+					if event.type == pygame.KEYDOWN:
+						if event.key == pygame.K_ESCAPE:
+							self.crashed = True
+							self.quitGame = True
+					currentDirection = self.UpdateDirection(event, prevDirection)
+				if not self.quitGame:
+					self.screen_Main.fill(self.window_colour)
+					self.DrawApple(self.apple_position)
+					self.DrawSnake(self.snake_pos)
+					self.MoveSnake(currentDirection)
+					# self.UpdatePosition()
+					self.UpdateDisplay()
+					prevDirection = currentDirection
+					isCollision = self.BoundaryCollision()
+					if isCollision:
+						self.crashed = True
+					self.clock.tick(16)
 			# PyGame event interaction
 			for event in pygame.event.get():
 				# Quits program
 				if event.type == pygame.QUIT:
-					pygame.display.quit()
-					pygame.quit()
 					self.quitGame = True
 				if event.type == pygame.KEYDOWN:
 					if event.key == pygame.K_ESCAPE:
-						pygame.display.quit()
-						pygame.quit()
 						self.quitGame = True
-				currentDirection = self.UpdateDirection(event, prevDirection)
-			if not self.quitGame:
-				self.screen_Main.fill(self.window_colour)
-				self.DrawApple(self.apple_position)
-				self.DrawSnake(self.snake_pos)
-				self.MoveSnake(currentDirection)
-				# self.UpdatePosition()
-				self.UpdateDisplay()
-				prevDirection = currentDirection
-				isCollision = self.BoundaryCollision()
-				if isCollision:
-					self.quitGame = True
-				self.clock.tick(16)
-		display_text = 'Your Score is: ' + str(self.score)
-		self.DisplayScore(display_text)
+			if self.quitGame:
+				pygame.display.quit()
+				pygame.quit()
+			else:
+				display_text = 'Your Score is: ' + str(self.score)
+				self.DisplayScore(display_text)
 
 #################################### MAIN ####################################
 if __name__ == "__main__":
