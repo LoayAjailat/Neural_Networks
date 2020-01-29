@@ -6,16 +6,19 @@ import math
 class NeuralNetwork():
 	# def __init__(self):
 
+	# Calculate the dot product of 2 vectors
 	def DotProduct(self, vector1, vector2):
 		product = 0
 		for i in range(2):
 			product += vector1[i]*vector2[i]
 		return product
 
+	# Calculates the angle between 2 magnitude vectors in radians
 	def ComputeAngle(self, product, magnitude1, magnitude2):
 		angle = math.acos(product/(magnitude1 * magnitude2))/math.pi
 		return angle
 
+	# Find the directional angle between the snake's head and the apple
 	def angle_with_apple(self, snake_pos, apple_pos):
 		vector_apple = np.array(apple_pos) - np.array(snake_pos[0]) # They need to be converted to np.array() so it can subtract, otherwise it fails
 		vector_snake = np.array(snake_pos[0]) - np.array(snake_pos[1])
