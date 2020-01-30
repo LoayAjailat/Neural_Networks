@@ -35,6 +35,25 @@ class NeuralNetwork():
 		print(angle)
 		return angle
 
+	def FindDirection(self, angle, snake_pos):
+		# If angle is > 0 then the apple is on the right side of the snake.
+		# If angle is < 0 then the apple is on the left side of the snake.
+		# If angle == 0 then the apple is in the same direction.
+		if angle > 0:
+			direction = 1 # Go right
+		elif angle < 0:
+			direction = -1 # Go left
+		else:
+			direction = 0 # Continue in same direction
+
+		vector_direction = np.array(snake_pos[0]) - np.array(snake_pos[1]) # Subtracts first block pos from the 2nd block to find direction its moving in
+		# Vectors will always be either [10,0] for right direction, [-10,0] for left direction and [0,10] for continuing straight as the block pos are only 
+		# 10 pixels apart
+		vector_left = np.array([vector_direction[1], -vector_direction[0]]) ####### I THINK THESE ARE REVERSED FOR LEFT AND RIGHT
+		vector_right = np.array([-vector_direction[1], vector_direction[0]])
+
+		#### IMPLEMENT YOUR OWN VERSION OF THIS PLEASE
+
 	def run(self):
 		angle = self.angle_with_apple([[260,250], [250,250]], [300,270])
 
