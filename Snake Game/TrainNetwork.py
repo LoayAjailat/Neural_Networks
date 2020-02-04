@@ -31,6 +31,7 @@ class NeuralNetwork():
 		while os.path.isfile(f"{filename}_{file_count}.csv"):
 			file_count += 1
 		self.filename = f"{filename}_{file_count}.csv"
+		self.WriteCSV("", "", headers = True)
 
 	# Calculate the dot product of 2 vectors
 	def DotProduct(self, vector1, vector2):
@@ -134,9 +135,9 @@ class NeuralNetwork():
 
 	def isNextBlocked(self, snake_pos, direction):
 		nextPos = snake_pos[0] + direction
-		isBlocked = False
-		if self.oGame.Collision_Boundary(nextPos) or self.oGame.Collision_Self(nextPos):
-			isBlocked = True
+		isBlocked = 0
+		if self.oGame.Collision_Boundary(nextPos) or self.oGame.Collision_Self(nextPos.tolist(), snake_pos):
+			isBlocked = 1
 		return isBlocked
 
 	def GetBlockedPath(self, snake_pos):
@@ -213,8 +214,8 @@ class NeuralNetwork():
 		for _ in tqdm(range(training_games)):
 			self.oGame.ResetGame()
 			snake_pos = self.oGame.snake_pos
-			apple_pos = self.oGame.apple_position
-			distance = self.DistanceToApple(snake_pos, apple_pos)
+			apple_pos = self.oGame.apple_pos
+			# distance = self.DistanceToApple(snake_pos, apple_pos)
 
 			for _ in range(steps_per_game):
 				angle, normVector_apple, normVector_snake = self.angle_with_apple(snake_pos, apple_pos)
@@ -227,16 +228,20 @@ class NeuralNetwork():
 				
 				training_data_x = [isLeftBlocked, isFrontBlocked, isRightBlocked, normVector_apple[0], normVector_apple[1], normVector_snake[0], normVector_snake[1]]
 				self.WriteCSV(training_data_x, training_data_y)
-				snake_pos, apple_pos = self.oGame.TrainGame(button)
+				snake_pos, apple_pos, crashed = self.oGame.TrainGame(button)
+				if crashed:
+					break
 
 		return training_data_x, training_data_y
 	
-	def WriteCSV(self, x, y):
+	def WriteCSV(self, x, y, headers = False):
 		with open(self.filename, 'a', newline = '') as csvfile:
 			writer = csv.writer(csvfile, delimiter=',')
 			# Write the headers to the first row
-			writer.writerow(["isLeftBlocked", "isFrontBlocked", "isRightBlocked", "Apple_x", "Apple_y", "Snake_x", "Snake_y", "Left", "Front", "Right"])
-			writer.writerow([x[0], x[1], x[2], x[3], x[4], x[5], x[6], y[0], y[1], y[2]])
+			if headers:
+				writer.writerow(["isLeftBlocked", "isFrontBlocked", "isRightBlocked", "Apple_x", "Apple_y", "Snake_x", "Snake_y", "Left", "Front", "Right"])
+			else:
+				writer.writerow([x[0], x[1], x[2], x[3], x[4], x[5], x[6], y[0], y[1], y[2]])
 
 
 #################################### MAIN ####################################

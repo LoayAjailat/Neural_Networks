@@ -26,7 +26,7 @@ class Snake():
 		y = int(self.screen_height/2)
 		self.snake_head = [x[0], y]
 		self.snake_pos  = [[x[0], y], [x[1], y], [x[2], y]] #Starting length of the snake is 3 units where each unit is a 10×10 block
-		self.apple_position = [random.randrange(1, int(self.screen_width/10))*10, random.randrange(10, int(self.screen_height/10))*10] #Random location
+		self.apple_pos = [random.randrange(1, int(self.screen_width/10))*10, random.randrange(10, int(self.screen_height/10))*10] #Random location
 		# Directions
 		self.prevButton = 1
 		self.left  = 0
@@ -65,8 +65,8 @@ class Snake():
 			return False
 
 	# Checks if the snake head collided with its own body 
-	def Collision_Self(self, snake_pos):
-		snake_head = snake_pos[0]
+	def Collision_Self(self, snake_head, snake_pos):
+		# snake_head = snake_pos[0]
 		if snake_head in snake_pos[1:]:
 			return True
 		else:
@@ -75,7 +75,7 @@ class Snake():
 	# Checks if the snake head collided with the apple
 	def Collision_Apple(self):
 		# Assign the apple a random position on screen
-		self.apple_position = [random.randrange(1, self.screen_width/10)*10, random.randrange(10, self.screen_height/10)*10]
+		self.apple_pos = [random.randrange(1, self.screen_width/10)*10, random.randrange(10, self.screen_height/10)*10]
 		self.score += 1
 
 	# Updates the direction the snake needs to take
@@ -103,7 +103,7 @@ class Snake():
 		elif direction == self.up:
 			self.snake_head[1] -= 10
 		
-		if self.snake_head == self.apple_position:
+		if self.snake_head == self.apple_pos:
 			self.Collision_Apple()
 			self.IncreaseSize()
 		else:
@@ -148,7 +148,7 @@ class Snake():
 		y = int(self.screen_height/2)
 		self.snake_head = [x[0], y]
 		self.snake_pos  = [[x[0], y], [x[1], y], [x[2], y]] #Starting length of the snake is 3 units where each unit is a 10×10 block
-		self.apple_position = [random.randrange(1, int(self.screen_width/10))*10, random.randrange(10, int(self.screen_height/10))*10] #Random location
+		self.apple_pos = [random.randrange(1, int(self.screen_width/10))*10, random.randrange(10, int(self.screen_height/10))*10] #Random location
 		self.score = 0
 
 	# Plays the game
@@ -171,13 +171,13 @@ class Snake():
 					currentDirection = self.UpdateDirection(event, prevDirection)
 				if not self.quitGame:
 					self.screen_Main.fill(self.window_colour)
-					self.DrawApple(self.apple_position)
+					self.DrawApple(self.apple_pos)
 					self.DrawSnake(self.snake_pos)
 					self.MoveSnake(currentDirection)
 					# self.UpdatePosition()
 					self.UpdateDisplay()
 					prevDirection = currentDirection
-					if self.Collision_Boundary(self.snake_head) or self.Collision_Self(self.snake_pos):
+					if self.Collision_Boundary(self.snake_head) or self.Collision_Self(self.snake_head, self.snake_pos):
 						display_text = 'Your Score is: ' + str(self.score)
 						self.DisplayScore(display_text)
 						self.SetCrashed()
@@ -202,19 +202,17 @@ class Snake():
 
 	def TrainGame(self, direction = 1):
 		while not self.crashed:
-			currentDirection = direction
+			crashed = False
 			self.screen_Main.fill(self.window_colour)
-			self.DrawApple(self.apple_position)
+			self.DrawApple(self.apple_pos)
 			self.DrawSnake(self.snake_pos)
-			self.MoveSnake(currentDirection)
+			self.MoveSnake(direction)
 			# self.UpdatePosition()
 			self.UpdateDisplay()
-			prevDirection = currentDirection
-			if self.Collision_Boundary(self.snake_head) or self.Collision_Self(self.snake_pos):
-				display_text = 'Your Score is: ' + str(self.score)
-				self.DisplayScore(display_text)
-			self.clock.tick(50000)
-			return self.snake_pos, self.apple_position
+			self.clock.tick(50000) # 64
+			if self.Collision_Boundary(self.snake_head) or self.Collision_Self(self.snake_head, self.snake_pos):
+				crashed = True
+			return self.snake_pos, self.apple_pos, crashed
 			
 #################################### MAIN ####################################
 if __name__ == "__main__":
