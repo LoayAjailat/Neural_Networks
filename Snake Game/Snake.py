@@ -3,12 +3,11 @@ import pygame
 import random
 import time 
 
-###############################################################################
-pygame.init()
-
 #################################### CLASS ####################################
 class Snake():
-	def __init__(self):
+	def __init__(self, init = True):
+		if init:
+			pygame.init()
 		# Screen Configs 
 		self.screen_width  = 500
 		self.screen_height = 500
@@ -126,7 +125,7 @@ class Snake():
 
 	# Displays the final score on screen
 	def DisplayScore(self, display_text):
-		largeText = pygame.font.Font('freesansbold.ttf',35)
+		largeText = pygame.font.Font('freesansbold.ttf', 24)
 		TextSurf = largeText.render(display_text, True, self.black)
 		TextRect = TextSurf.get_rect()
 		TextRect.center = (int(self.screen_width/2), int(self.screen_height/2))
