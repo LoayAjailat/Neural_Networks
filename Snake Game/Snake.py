@@ -121,6 +121,7 @@ class Snake():
 		
 	# Updates the pygame display
 	def UpdateDisplay(self):
+		pygame.display.set_caption(f"Score: {self.score}")
 		pygame.display.update()
 
 	# Displays the final score on screen
@@ -151,7 +152,7 @@ class Snake():
 		self.score = 0
 
 	# Plays the game
-	def PlayGame(self, direction = 1, training = False):
+	def PlayGame(self, direction = 1):
 		prevDirection = 1
 		currentDirection = direction
 
@@ -167,8 +168,7 @@ class Snake():
 						if event.key == pygame.K_ESCAPE:
 							self.SetCrashed()
 							self.QuitGame()
-					if not training:
-						currentDirection = self.UpdateDirection(event, prevDirection)
+					currentDirection = self.UpdateDirection(event, prevDirection)
 				if not self.quitGame:
 					self.screen_Main.fill(self.window_colour)
 					self.DrawApple(self.apple_position)
@@ -181,12 +181,7 @@ class Snake():
 						display_text = 'Your Score is: ' + str(self.score)
 						self.DisplayScore(display_text)
 						self.SetCrashed()
-						if training:
-							self.QuitGame()
-					if training:
-						self.clock.tick(50000)
-					else:						
-						self.clock.tick(16) # Sets the framerate to 16
+					self.clock.tick(16) # Sets the framerate to 16
 			# PyGame event interaction
 			for event in pygame.event.get():
 				# Quits program
@@ -197,14 +192,30 @@ class Snake():
 						self.QuitGame()
 					if event.key == pygame.K_SPACE:
 						self.ResetGame()
-			if not training:
-				if self.quitGame:
-					pygame.display.quit()
-					pygame.quit()
-				else:
-					display_text = 'Your Score is: ' + str(self.score)
-					self.DisplayScore(display_text)
 
+			if self.quitGame:
+				pygame.display.quit()
+				pygame.quit()
+			else:
+				display_text = 'Your Score is: ' + str(self.score)
+				self.DisplayScore(display_text)
+
+	def TrainGame(self, direction = 1):
+		while not self.crashed:
+			currentDirection = direction
+			self.screen_Main.fill(self.window_colour)
+			self.DrawApple(self.apple_position)
+			self.DrawSnake(self.snake_pos)
+			self.MoveSnake(currentDirection)
+			# self.UpdatePosition()
+			self.UpdateDisplay()
+			prevDirection = currentDirection
+			if self.Collision_Boundary(self.snake_head) or self.Collision_Self(self.snake_pos):
+				display_text = 'Your Score is: ' + str(self.score)
+				self.DisplayScore(display_text)
+			self.clock.tick(50000)
+			return self.snake_pos, self.apple_position
+			
 #################################### MAIN ####################################
 if __name__ == "__main__":
 	game = Snake()

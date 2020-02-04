@@ -5,6 +5,7 @@ from Snake import *
 from tqdm import tqdm
 import csv
 import datetime as dt
+import os.path
 
 #################################### CLASS ####################################
 class NeuralNetwork():
@@ -22,6 +23,14 @@ class NeuralNetwork():
 		self.goRight    = [0,0,1]
 		self.goFront	= [0,1,0]
 		self.goLeft		= [1,0,0]
+
+		date_stamp = dt.datetime.now().strftime("%Y%m%d")
+		file_count = 1
+		path = "./Snake Game/Training Data/"
+		filename = f"{path}TrainingData_{date_stamp}"
+		while os.path.isfile(f"{filename}_{file_count}.csv"):
+			file_count += 1
+		self.filename = f"{filename}_{file_count}.csv"
 
 	# Calculate the dot product of 2 vectors
 	def DotProduct(self, vector1, vector2):
@@ -46,11 +55,16 @@ class NeuralNetwork():
 			magnitude_apple = 10
 		if magnitude_snake == 0:
 			magnitude_snake = 10
-		
-		product = self.DotProduct(vector_apple, vector_snake)
-		angle   = self.ComputeAngle(product, magnitude_apple, magnitude_snake)
 		vector_apple_normalised = vector_apple/magnitude_apple
 		vector_snake_normalised = vector_snake/magnitude_snake
+		
+		# product = self.DotProduct(vector_apple, vector_snake)
+		# angle   = self.ComputeAngle(product, magnitude_apple, magnitude_snake)
+		angle = math.atan2(
+        vector_apple_normalised[1] * vector_snake_normalised[0] - vector_apple_normalised[
+            0] * vector_snake_normalised[1],
+        vector_apple_normalised[1] * vector_snake_normalised[1] + vector_apple_normalised[
+            0] * vector_snake_normalised[0]) / math.pi
 		return angle, vector_apple_normalised, vector_snake_normalised
 
 	def DistanceToApple(self, snake_pos, apple_pos):
@@ -64,42 +78,54 @@ class NeuralNetwork():
 		vector_right = np.array([-vector_direction[1], vector_direction[0]]) # This formula goes right in whichever orientation the snake head is in
 		return vector_direction, vector_right, vector_left
 
-	# Finds the next calculated direction
-	def FindNextDirection(self, angle, snake_pos):
-		# If angle is > 0 then the apple is on the right side of the snake.
-		# If angle is < 0 then the apple is on the left side of the snake.
-		# If angle == 0 then the apple is in the same direction.
-		if angle > 0:
+	def SetDirection(self, direction):
+		if direction == 'R':
 			self.isNextRight 	= True 
 			self.isNextLeft  	= False
 			self.isNextFront 	= False
-		elif angle < 0:
+		elif direction == 'L':
 			self.isNextRight 	= False 
 			self.isNextLeft  	= True
 			self.isNextFront	= False
-		else:
+		elif direction == 'F':
 			self.isNextRight 	= False 
 			self.isNextLeft  	= False
 			self.isNextFront 	= True
 
-		vector_direction, vector_right, vector_left = self.GetVectors(snake_pos)
+	def GenerateRandomDirection(self, angle, snake_pos):
+		if angle > 0:
+			self.SetDirection('R')
+		elif angle < 0:
+			self.SetDirection('L')
+		else:
+			self.SetDirection('F')
+		return self.FindDirection(angle, snake_pos)
 		
+	# Finds the next calculated direction
+	def FindDirection(self, angle, snake_pos):
+		vector_direction, vector_right, vector_left = self.GetVectors(snake_pos)
+
+		# If angle is > 0 then the apple is on the right side of the snake.
+		# If angle is < 0 then the apple is on the left side of the snake.
+		# If angle == 0 then the apple is in the same direction.
+		next_direction = vector_direction
 		if self.isNextRight:
 			next_direction = vector_right
 		elif self.isNextLeft:
 			next_direction = vector_left
 		else:
 			next_direction = vector_direction
+		
 		button = self.GenerateNextButton(next_direction)
-		return next_direction, button
+		return button
 	
 	def GenerateNextButton(self, direction):
-		button = 0
-		if direction.tolist() == [10,0]:
+		button = 0		
+		if direction.tolist() == self.rightStep:
 			button = 1
-		elif direction.tolist() == [-10,0]:
+		elif direction.tolist() == self.leftStep:
 			button = 0
-		elif direction.tolist() == [0,10]:
+		elif direction.tolist() == self.downStep:
 			button = 3
 		else:
 			button = 2
@@ -113,19 +139,21 @@ class NeuralNetwork():
 			isBlocked = True
 		return isBlocked
 
-	def GetBlockedDirections(self, snake_pos):
+	def GetBlockedPath(self, snake_pos):
 		vector_direction, vector_right, vector_left = self.GetVectors(snake_pos)
 
 		isRightBlocked = self.isNextBlocked(snake_pos, vector_right)
 		isLeftBlocked  = self.isNextBlocked(snake_pos, vector_left)
 		isFrontBlocked = self.isNextBlocked(snake_pos, vector_direction)
-
 		return isLeftBlocked, isFrontBlocked, isRightBlocked
 
 	def GenerateOutput(self, inputs, training_data):
 		isLeftBlocked  = inputs[0]
 		isFrontBlocked = inputs[1]
 		isRightBlocked = inputs[2]
+		button 		   = inputs[3]
+		angle 		   = inputs[4]
+		snake_pos	   = inputs[5]
 
 		output = self.goFront
 
@@ -133,20 +161,26 @@ class NeuralNetwork():
 			if isLeftBlocked:
 				if isFrontBlocked and not isRightBlocked:
 					output = self.goRight
+					button = self.FindDirection(angle, snake_pos)
 				elif not isFrontBlocked and isRightBlocked:
 					output = self.goFront
+					button = self.FindDirection(angle, snake_pos)
 				elif not isFrontBlocked and not isRightBlocked:
 					output = self.goFront
+					button = self.FindDirection(angle, snake_pos)
 			else:
 				output = self.goLeft
 
 		elif self.isNextFront:
 			if isFrontBlocked:
 				if isLeftBlocked and not isRightBlocked:
+					button = self.FindDirection(angle, snake_pos)
 					output = self.goRight
 				elif not isLeftBlocked and isRightBlocked:
+					button = self.FindDirection(angle, snake_pos)
 					output = self.goLeft
 				elif not isLeftBlocked and not isRightBlocked:
+					button = self.FindDirection(angle, snake_pos)
 					output = self.goRight
 			else:
 				output = self.goFront
@@ -154,17 +188,21 @@ class NeuralNetwork():
 		elif self.isNextRight:
 			if isRightBlocked:
 				if isFrontBlocked and not isLeftBlocked:
+					button = self.FindDirection(angle, snake_pos)
 					output = self.goLeft
 				elif not isFrontBlocked and isLeftBlocked:
+					button = self.FindDirection(angle, snake_pos)
 					output = self.goFront
 				elif not isFrontBlocked and not isLeftBlocked:
+					button = self.FindDirection(angle, snake_pos)
 					output = self.goFront
 			else:
 				output = self.goRight
 
-		training_data.append(output)
+		# training_data.append(output)
+		training_data = output
 
-		return training_data
+		return training_data, button
 
 	def GenerateData(self):
 		training_data_x = []
@@ -180,26 +218,25 @@ class NeuralNetwork():
 
 			for _ in range(steps_per_game):
 				angle, normVector_apple, normVector_snake = self.angle_with_apple(snake_pos, apple_pos)
-				isLeftBlocked, isFrontBlocked, isRightBlocked = self.GetBlockedDirections(snake_pos)
-				_, button = self.FindNextDirection(angle, snake_pos)
-				training_data_y = self.GenerateOutput([isLeftBlocked, isFrontBlocked, isRightBlocked], training_data_y)
+				isLeftBlocked, isFrontBlocked, isRightBlocked = self.GetBlockedPath(snake_pos)
+				button = self.GenerateRandomDirection(angle, snake_pos)
+				training_data_y, button = self.GenerateOutput([isLeftBlocked, isFrontBlocked, isRightBlocked, button, angle, snake_pos], training_data_y)
 
 				if isFrontBlocked and isRightBlocked and isLeftBlocked:
 					break
 				
-				training_data_x.append([isLeftBlocked, isFrontBlocked, isRightBlocked, normVector_apple[0], normVector_apple[1], normVector_snake[0], normVector_snake[1]])
+				training_data_x = [isLeftBlocked, isFrontBlocked, isRightBlocked, normVector_apple[0], normVector_apple[1], normVector_snake[0], normVector_snake[1]]
 				self.WriteCSV(training_data_x, training_data_y)
-				self.oGame.PlayGame(button, training = True)
+				snake_pos, apple_pos = self.oGame.TrainGame(button)
 
-		return training_data_x, training_data_y	
+		return training_data_x, training_data_y
 	
 	def WriteCSV(self, x, y):
-		date_stamp = dt.datetime.now().strftime("%Y%m%d")
-		with open(f"TrainingData_{date_stamp}.csv", 'a', newline = '') as csvfile:
+		with open(self.filename, 'a', newline = '') as csvfile:
 			writer = csv.writer(csvfile, delimiter=',')
 			# Write the headers to the first row
-			writer.writerow(["isLeftBlocked", "isFrontBlocked", "isRightBlocked", "Apple_x", "Apple_y", "Snake_x", "Snake_y"])
-			writer.writerow([x, y])
+			writer.writerow(["isLeftBlocked", "isFrontBlocked", "isRightBlocked", "Apple_x", "Apple_y", "Snake_x", "Snake_y", "Left", "Front", "Right"])
+			writer.writerow([x[0], x[1], x[2], x[3], x[4], x[5], x[6], y[0], y[1], y[2]])
 
 
 #################################### MAIN ####################################
