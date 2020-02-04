@@ -10,8 +10,8 @@ pygame.init()
 class Snake():
 	def __init__(self):
 		# Screen Configs 
-		self.screen_width  = 640
-		self.screen_height = 480
+		self.screen_width  = 500
+		self.screen_height = 500
 		self.window_colour = (200, 200, 200)
 		self.screen_Main   = pygame.display.set_mode((self.screen_width, self.screen_height))
 		pygame.display.set_caption("Snake")
@@ -22,9 +22,12 @@ class Snake():
 		self.black = (0, 0, 0)
 		self.blue  = (61, 112, 240)
 		# Snake and apple coordinates
-		self.snake_head = [250, 250]
-		self.snake_pos  = [[250,250], [240,250], [230,250]] #Starting length of the snake is 3 units where each unit is a 10×10 block
-		self.apple_position = [random.randrange(1, self.screen_width/10)*10, random.randrange(10, self.screen_height/10)*10] #Random location
+		centre_x = int(self.screen_width/2)
+		x = [centre_x, centre_x - 10, centre_x - 20]
+		y = int(self.screen_height/2)
+		self.snake_head = [x[0], y]
+		self.snake_pos  = [[x[0], y], [x[1], y], [x[2], y]] #Starting length of the snake is 3 units where each unit is a 10×10 block
+		self.apple_position = [random.randrange(1, int(self.screen_width/10))*10, random.randrange(10, int(self.screen_height/10))*10] #Random location
 		# Directions
 		self.prevButton = 1
 		self.left  = 0
@@ -140,11 +143,14 @@ class Snake():
 	def ResetGame(self):
 		self.quitGame = False
 		self.crashed  = False
-		self.snake_head = [250, 250]
-		self.snake_pos  = [[250,250], [240,250], [230,250]] #Starting length of the snake is 3 units where each unit is a 10×10 block
-		self.apple_position = [random.randrange(1, self.screen_width/10)*10, random.randrange(10, self.screen_height/10)*10] #Random location
+		centre_x = int(self.screen_width/2)
+		x = [centre_x, centre_x - 10, centre_x - 20]
+		y = int(self.screen_height/2)
+		self.snake_head = [x[0], y]
+		self.snake_pos  = [[x[0], y], [x[1], y], [x[2], y]] #Starting length of the snake is 3 units where each unit is a 10×10 block
+		self.apple_position = [random.randrange(1, int(self.screen_width/10))*10, random.randrange(10, int(self.screen_height/10))*10] #Random location
 		self.score = 0
-		
+
 	# Plays the game
 	def PlayGame(self, direction = 1, training = False):
 		prevDirection = 1
