@@ -212,7 +212,7 @@ class Snake():
 			self.clock.tick(50000) # 64
 			if self.Collision_Boundary(self.snake_head) or self.Collision_Self(self.snake_head, self.snake_pos):
 				crashed = True
-			return self.snake_pos, self.apple_pos, crashed
+			return self.snake_pos, self.apple_pos, crashed	
 			
 #################################### MAIN ####################################
 if __name__ == "__main__":

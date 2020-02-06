@@ -6,9 +6,11 @@ from tqdm import tqdm
 import csv
 import datetime as dt
 import os.path
-
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.models import model_from_json
 #################################### CLASS ####################################
-class NeuralNetwork():
+class GenerateTrainingData():
 	def __init__(self):
 		self.oGame = Snake()
 		# Flags
@@ -62,10 +64,10 @@ class NeuralNetwork():
 		# product = self.DotProduct(vector_apple, vector_snake)
 		# angle   = self.ComputeAngle(product, magnitude_apple, magnitude_snake)
 		angle = math.atan2(
-        vector_apple_normalised[1] * vector_snake_normalised[0] - vector_apple_normalised[
-            0] * vector_snake_normalised[1],
-        vector_apple_normalised[1] * vector_snake_normalised[1] + vector_apple_normalised[
-            0] * vector_snake_normalised[0]) / math.pi
+		vector_apple_normalised[1] * vector_snake_normalised[0] - vector_apple_normalised[
+			0] * vector_snake_normalised[1],
+		vector_apple_normalised[1] * vector_snake_normalised[1] + vector_apple_normalised[
+			0] * vector_snake_normalised[0]) / math.pi
 		return angle, vector_apple_normalised, vector_snake_normalised
 
 	def DistanceToApple(self, snake_pos, apple_pos):
@@ -243,10 +245,74 @@ class NeuralNetwork():
 			else:
 				writer.writerow([x[0], x[1], x[2], x[3], x[4], x[5], x[6], y[0], y[1], y[2]])
 
+class NeuralNetwork():
+	# def __init__(self):
+	def ExtractData(self, filename):
+		training_data_x = []
+		training_data_y = []
+		with open(filename) as csv_file:
+			csv_reader = csv.reader(csv_file, delimiter=',')
+			for row in csv_reader:
+				training_data_x.append(row[:-1])
+				training_data_y.append(row[-1:])
+		return training_data_x, training_data_y
+	
+	def Model(self):
+		training_data_x, training_data_y = self.ExtractData("./Snake Game/Training Data/TrainingData_20200204_1.csv")
+		model = Sequential()
+		model.add(Dense(units=9,input_dim=7))
+
+		model.add(Dense(units=15, activation='relu'))
+		model.add(Dense(output_dim=3,  activation = 'softmax'))
+
+		model.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
+		model.fit((np.array(training_data_x).reshape(-1,7)),( np.array(training_data_y).reshape(-1,3)), batch_size = 256,epochs= 3)
+
+		model.save_weights('model.h5')
+		model_json = model.to_json()
+		with open('model.json', 'w') as json_file:
+			json_file.write(model_json)
+
+	def PlayAutonomous(self):
+		json_file = open('./Snake Game/Training Data/model.json', 'r')
+		loaded_json_model = json_file.read()
+		model = model_from_json(loaded_json_model)
+		model.load_weights('model.h5')
+		o_GenData = GenerateTrainingData()
+		o_Game = Snake()
+		
+		# oGame.ResetGame()
+		snake_pos = o_Game.snake_pos
+		apple_pos = o_Game.apple_pos
+		# distance = self.DistanceToApple(snake_pos, apple_pos)
+
+		for _ in range(2000):
+			angle, normVector_apple, normVector_snake = o_GenData.angle_with_apple(snake_pos, apple_pos)
+			isLeftBlocked, isFrontBlocked, isRightBlocked = o_GenData.GetBlockedPath(snake_pos)
+			button = o_GenData.GenerateRandomDirection(angle, snake_pos)
+			training_data_y, button = o_GenData.GenerateOutput([isLeftBlocked, isFrontBlocked, isRightBlocked, button, angle, snake_pos], training_data_y)
+
+			predicted_direction = np.argmax(np.array(model.predict(np.array([isLeftBlocked, isFrontBlocked,\
+					isRightBlocked, normVector_apple[0], normVector_apple[1], normVector_snake[0], normVector_snake[1]])\
+						.reshape(-1, 7))))
+
+			new_direction = np.array(snake_pos[0]) - np.array(snake_pos[1])
+			if predicted_direction == 0: #Left
+				new_direction = np.array([new_direction[1], -new_direction[0]])
+			elif predicted_direction == 1: # Continue
+				new_direction = np.array(snake_pos[0]) - np.array(snake_pos[1])
+			elif predicted_direction == 2: # Right
+				new_direction = np.array([-new_direction[1], new_direction[0]])
+			button = o_GenData.GenerateNextButton(new_direction)
+
+			if isFrontBlocked and isRightBlocked and isLeftBlocked:
+				break
+			
+			snake_pos, apple_pos, crashed = o_Game.TrainGame(button)
+			if crashed:
+				break
 
 #################################### MAIN ####################################
 if __name__ == "__main__":
-	nn = NeuralNetwork()
-	nn.GenerateData()
-
-
+	model = NeuralNetwork()
+	model.PlayAutonomous()
