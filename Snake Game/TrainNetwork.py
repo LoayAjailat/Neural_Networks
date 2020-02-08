@@ -28,7 +28,7 @@ class GenerateTrainingData():
 
 		date_stamp = dt.datetime.now().strftime("%Y%m%d")
 		file_count = 1
-		path = "./Snake Game/Training Data/"
+		path = "./Training Data/"
 		filename = f"{path}TrainingData_{date_stamp}"
 		while os.path.isfile(f"{filename}_{file_count}.csv"):
 			file_count += 1
@@ -169,7 +169,7 @@ class GenerateTrainingData():
 					output = self.goFront
 					button = self.FindDirection(angle, snake_pos)
 				elif not isFrontBlocked and not isRightBlocked:
-					output = self.goFront
+					output = self.goRight
 					button = self.FindDirection(angle, snake_pos)
 			else:
 				output = self.goLeft
@@ -198,7 +198,7 @@ class GenerateTrainingData():
 					output = self.goFront
 				elif not isFrontBlocked and not isLeftBlocked:
 					button = self.FindDirection(angle, snake_pos)
-					output = self.goFront
+					output = self.goLeft
 			else:
 				output = self.goRight
 
@@ -211,7 +211,7 @@ class GenerateTrainingData():
 		training_data_x = []
 		training_data_y = []
 		training_games = 1000
-		steps_per_game = 2000
+		steps_per_game = 2500
 
 		for _ in tqdm(range(training_games)):
 			self.oGame.ResetGame()
@@ -247,18 +247,33 @@ class GenerateTrainingData():
 
 class NeuralNetwork():
 	# def __init__(self):
+	# 	from keras.models import Sequential
+	# 	from keras.layers import Dense
+	# 	from keras.models import model_from_json
+		
 	def ExtractData(self, filename):
 		training_data_x = []
 		training_data_y = []
+		count = 0
 		with open(filename) as csv_file:
+			print("INFO: Extracting data...")
 			csv_reader = csv.reader(csv_file, delimiter=',')
 			for row in csv_reader:
-				training_data_x.append(row[:-1])
-				training_data_y.append(row[-1:])
+				if count == 0:
+					count += 1
+					continue
+				else:
+					training_data_x.append([int(row[0]),int(row[1]),int(row[2]),\
+						float(row[3]), float(row[4]),\
+							int(float(row[5])),int(float(row[6]))])
+					training_data_y.append([int(row[7]), int(row[8]), int(row[9])] )
+					# training_data_y.append([int(float(row[7][1])), int(float(row[7][4])), int(float(row[7][7]))] )
+		print("INFO: Data extracted.")
 		return training_data_x, training_data_y
 	
-	def Model(self):
-		training_data_x, training_data_y = self.ExtractData("./Snake Game/Training Data/TrainingData_20200204_1.csv")
+	def CreateModel(self, data):
+		print("INFO: Creating model...")
+		training_data_x, training_data_y = self.ExtractData(data)
 		model = Sequential()
 		model.add(Dense(units=9,input_dim=7))
 
@@ -270,27 +285,30 @@ class NeuralNetwork():
 
 		model.save_weights('model.h5')
 		model_json = model.to_json()
-		with open('model.json', 'w') as json_file:
+		with open('./Model/model.json', 'w') as json_file:
 			json_file.write(model_json)
+			print("INFO: Model created.")
+		return model
 
-	def PlayAutonomous(self):
-		json_file = open('./Snake Game/Training Data/model.json', 'r')
+	def PlayAutonomous(self, model, weights):
+		json_file = open(model, 'r')
 		loaded_json_model = json_file.read()
 		model = model_from_json(loaded_json_model)
-		model.load_weights('model.h5')
+		model.load_weights(weights)
 		o_GenData = GenerateTrainingData()
 		o_Game = Snake()
 		
+		training_data_y = []
 		# oGame.ResetGame()
 		snake_pos = o_Game.snake_pos
 		apple_pos = o_Game.apple_pos
 		# distance = self.DistanceToApple(snake_pos, apple_pos)
 
-		for _ in range(2000):
+		for step in range(200000):
 			angle, normVector_apple, normVector_snake = o_GenData.angle_with_apple(snake_pos, apple_pos)
 			isLeftBlocked, isFrontBlocked, isRightBlocked = o_GenData.GetBlockedPath(snake_pos)
-			button = o_GenData.GenerateRandomDirection(angle, snake_pos)
-			training_data_y, button = o_GenData.GenerateOutput([isLeftBlocked, isFrontBlocked, isRightBlocked, button, angle, snake_pos], training_data_y)
+			# button = o_GenData.GenerateRandomDirection(angle, snake_pos)
+			# training_data_y, button = o_GenData.GenerateOutput([isLeftBlocked, isFrontBlocked, isRightBlocked, button, angle, snake_pos], training_data_y)
 
 			predicted_direction = np.argmax(np.array(model.predict(np.array([isLeftBlocked, isFrontBlocked,\
 					isRightBlocked, normVector_apple[0], normVector_apple[1], normVector_snake[0], normVector_snake[1]])\
@@ -305,14 +323,17 @@ class NeuralNetwork():
 				new_direction = np.array([-new_direction[1], new_direction[0]])
 			button = o_GenData.GenerateNextButton(new_direction)
 
-			if isFrontBlocked and isRightBlocked and isLeftBlocked:
+			isBlocked = o_GenData.isNextBlocked(snake_pos,new_direction)
+			if isBlocked:
 				break
 			
-			snake_pos, apple_pos, crashed = o_Game.TrainGame(button)
-			if crashed:
-				break
+			snake_pos, apple_pos, _ = o_Game.TrainGame(button)
+			print(step)
 
 #################################### MAIN ####################################
 if __name__ == "__main__":
+	# model = GenerateTrainingData()
+	# model.GenerateData()
 	model = NeuralNetwork()
-	model.PlayAutonomous()
+	# model.CreateModel("./Training Data/TrainingData_20200207_5.csv")
+	model.PlayAutonomous('./Model/model.json', './Model/model.h5')

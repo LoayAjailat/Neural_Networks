@@ -5,8 +5,8 @@ import time
 
 #################################### CLASS ####################################
 class Snake():
-	def __init__(self, init = True):
-		if init:
+	def __init__(self):
+		if pygame.get_init:
 			pygame.init()
 		# Screen Configs 
 		self.screen_width  = 500
@@ -209,11 +209,11 @@ class Snake():
 			self.MoveSnake(direction)
 			# self.UpdatePosition()
 			self.UpdateDisplay()
-			self.clock.tick(50000) # 64
+			self.clock.tick(128) # 64
 			if self.Collision_Boundary(self.snake_head) or self.Collision_Self(self.snake_head, self.snake_pos):
 				crashed = True
-			return self.snake_pos, self.apple_pos, crashed	
-			
+			return self.snake_pos, self.apple_pos, crashed
+
 #################################### MAIN ####################################
 if __name__ == "__main__":
 	game = Snake()
