@@ -33,8 +33,7 @@ class GenerateTrainingData():
 		while os.path.isfile(f"{filename}_{file_count}.csv"):
 			file_count += 1
 		self.filename = f"{filename}_{file_count}.csv"
-		self.WriteCSV("", "", headers = True)
-
+		
 	# Calculate the dot product of 2 vectors
 	def DotProduct(self, vector1, vector2):
 		product = 0
@@ -208,6 +207,7 @@ class GenerateTrainingData():
 		return training_data, button
 
 	def GenerateData(self):
+		self.WriteCSV("", "", headers = True)
 		training_data_x = []
 		training_data_y = []
 		training_games = 1000
