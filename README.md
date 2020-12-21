@@ -49,11 +49,11 @@ To increase/decrease the speed at which the game is run, change the value set in
 4. Allow interrupting the training process
     
 ## Requirements
-numpy
-math
-tqdm
-csv
-datetime
-tensorflow
-keras
+1. numpy
+2. math
+3. tqdm
+4. csv
+5. datetime
+6. tensorflow
+7. keras
 
