@@ -6,6 +6,7 @@ from tqdm import tqdm
 import csv
 import datetime as dt
 import os
+import sys
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.models import model_from_json
@@ -372,21 +373,25 @@ class NeuralNetwork():
 
 #################################### MAIN ####################################
 if __name__ == "__main__":
-	### Uncomment the option you wish to use -- In the future, it will allow for selection in main menu
-
 	## To generate training data and create neural network model
-	# model = GenerateTrainingData()
-	# model.GenerateData()
-	# date_stamp = dt.datetime.now().strftime("%Y%m%d")
-	# file_count = 1
-	# filename = f"./Training Data/TrainingData_{date_stamp}"
-	# while os.path.isfile(f"{filename}_{file_count}.csv"):
-	# 	file_count += 1
-	# filename = f"{filename}_{file_count - 1}.csv"
-	# model = NeuralNetwork()
-	# model.CreateModel(f"{filename}")
+	mode = 'A'
+	if len(sys.argv) >= 2:
+		mode = sys.argv[1]
 
-
-	## To run autonomously
-	model = NeuralNetwork()
-	model.PlayAutonomous('./Model/model.json', './Model/model.h5')
+	# Train model
+	if mode == 'T':
+		model = GenerateTrainingData()
+		model.GenerateData()
+		date_stamp = dt.datetime.now().strftime("%Y%m%d")
+		file_count = 1
+		filename = f"./Training Data/TrainingData_{date_stamp}"
+		while os.path.isfile(f"{filename}_{file_count}.csv"):
+			file_count += 1
+		filename = f"{filename}_{file_count - 1}.csv"
+		model = NeuralNetwork()
+		model.CreateModel(f"{filename}")
+	
+	## Run autonomously
+	else:
+		model = NeuralNetwork()
+		model.PlayAutonomous('./Model/model.json', './Model/model.h5')

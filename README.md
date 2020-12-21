@@ -29,7 +29,7 @@ NOTE: To kill an autonomous play, use CTRL-C in the terminal. Terminating within
       Recent bug discovered that causes the GUI to crash if screen is pressed. Fix is in progress.
 
 ### Training model
-To create a new training model. Uncomment the training option in the main section in TrainNetwork.py and run.
+To create a new training model, please enter the DeepLearning directory in your terminal and run the TrainNetwork.py with the arg T as follows: 'python TrainNetwork.py T'
 
 ### Extra
 To increase/decrease the speed at which the game is run, change the value set in 'self.clock.tick(128)'. Higher values speed up the game while lower values slow down the game.
