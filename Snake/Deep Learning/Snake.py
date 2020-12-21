@@ -51,8 +51,9 @@ class Snake():
 		self.score = 0
 		
 		# States
-		self.quitGame = False
-		self.crashed = False
+		self.quitGame  = False
+		self.crashed   = False
+		self.resetGame = False
 		
 	# Draws the apple on screen
 	def DrawApple(self, location):
@@ -163,9 +164,10 @@ class Snake():
 		x = [centre_x, centre_x - 10, centre_x - 20]
 		y = int(self.screen_height/2)
 		self.snake_head = [x[0], y]
-		self.snake_pos  = [[x[0], y], [x[1], y], [x[2], y]] #Starting length of the snake is 3 units where each unit is a 10×10 block
-		self.apple_pos = [random.randrange(1, int(self.screen_width/10))*10, random.randrange(10, int(self.screen_height/10))*10] #Random location
+		self.snake_pos  = [[x[0], y], [x[1], y], [x[2], y]] #Len of the snake is 3 units (each unit is a 10×10 block)
+		self.apple_pos = [random.randrange(1, int(self.screen_width/10))*10, random.randrange(10, int(self.screen_height/10))*10]
 		self.score = 0
+		self.resetGame = True
 
 	# Plays the game
 	def PlayGame(self, direction = 1):
@@ -214,6 +216,8 @@ class Snake():
 				if self.quitGame:
 					pygame.display.quit()
 					pygame.quit()
+				elif self.resetGame:
+					currentDirection = direction
 				else:
 					display_text = 'Your Score is: ' + str(self.score)
 					self.DisplayScore(display_text)
