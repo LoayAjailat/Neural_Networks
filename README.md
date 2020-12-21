@@ -7,16 +7,24 @@ To play Snake as a user, please run the Snake.py software.
 Use the arrow keys to move the snake around the screen.
 
 Keys:
+
     UP Arrow    - Upwards direction
+    
     LEFT Arrow  - Left direction
+    
     RIGHT Arrow - Right direction
+    
     DOWN Arrow  - Downwards direction
+    
     SPACE       - Resets game
+    
     ESC         - Exits game
 
 ### Autonomous playing
 The project already contains a trained model that can run the game autonomously.
+
 To play snake autonomously, please enter the DeepLearning directory in your terminal and run TrainNetwork.py
+
 NOTE: To kill an autonomous play, use CTRL-C in the terminal. Terminating within the GUI is a feature in progress.
       Recent bug discovered that causes the GUI to crash if screen is pressed. Fix is in progress.
 
@@ -42,11 +50,11 @@ To increase/decrease the speed at which the game is run, change the value set in
 4. Allow interrupting the training process
     
 ## Requirements
-numpy
-math
-tqdm
-csv
-datetime
-tensorflow
-keras
+1. numpy
+2. math
+3. tqdm
+4. csv
+5. datetime
+6. tensorflow
+7. keras
 
