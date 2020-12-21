@@ -7,6 +7,7 @@ To play Snake as a user, please run the Snake.py software.
 Use the arrow keys to move the snake around the screen.
 
 Keys:
+
     UP Arrow    - Upwards direction
     
     LEFT Arrow  - Left direction
