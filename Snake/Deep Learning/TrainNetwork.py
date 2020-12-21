@@ -5,11 +5,15 @@ from Snake import *
 from tqdm import tqdm
 import csv
 import datetime as dt
-import os.path
+import os
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.models import model_from_json
+import logging
 #################################### CLASS ####################################
+logging.basicConfig(filename=f'./SystemLog.log', filemode='a', 
+	format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+	
 class GenerateTrainingData():
 	def __init__(self):
 		self.oGame = Snake()
@@ -69,9 +73,11 @@ class GenerateTrainingData():
 			0] * vector_snake_normalised[0]) / math.pi
 		return angle, vector_apple_normalised, vector_snake_normalised
 
+	# Find the distance to the apple
 	def DistanceToApple(self, snake_pos, apple_pos):
 		return np.linalg.norm(np.array(apple_pos) - np.array(snake_pos[0]))
 
+	# Get the directional vectors
 	def GetVectors(self, snake_pos):
 		vector_direction = np.array(snake_pos[0]) - np.array(snake_pos[1]) # Subtracts first block pos from the 2nd block to find direction its moving in
 		# Vectors will always be either [10,0] for right direction, [-10,0] for left direction and [0,10] for continuing straight as the block pos are only 
@@ -80,6 +86,7 @@ class GenerateTrainingData():
 		vector_right = np.array([-vector_direction[1], vector_direction[0]]) # This formula goes right in whichever orientation the snake head is in
 		return vector_direction, vector_right, vector_left
 
+	# Sets the next direction
 	def SetDirection(self, direction):
 		if direction == 'R':
 			self.isNextRight 	= True 
@@ -94,6 +101,7 @@ class GenerateTrainingData():
 			self.isNextLeft  	= False
 			self.isNextFront 	= True
 
+	# Generates a random direction
 	def GenerateRandomDirection(self, angle, snake_pos):
 		if angle > 0:
 			self.SetDirection('R')
@@ -121,6 +129,7 @@ class GenerateTrainingData():
 		button = self.GenerateNextButton(next_direction)
 		return button
 	
+	# Generates the next move
 	def GenerateNextButton(self, direction):
 		button = 0		
 		if direction.tolist() == self.rightStep:
@@ -134,6 +143,7 @@ class GenerateTrainingData():
 			
 		return button
 
+	# Checks if the next future move is blocked
 	def isNextBlocked(self, snake_pos, direction):
 		nextPos = snake_pos[0] + direction
 		isBlocked = 0
@@ -141,6 +151,7 @@ class GenerateTrainingData():
 			isBlocked = 1
 		return isBlocked
 
+	# Gets the directions that are blocked
 	def GetBlockedPath(self, snake_pos):
 		vector_direction, vector_right, vector_left = self.GetVectors(snake_pos)
 
@@ -149,6 +160,7 @@ class GenerateTrainingData():
 		isFrontBlocked = self.isNextBlocked(snake_pos, vector_direction)
 		return isLeftBlocked, isFrontBlocked, isRightBlocked
 
+	# Generates output data and move
 	def GenerateOutput(self, inputs, training_data):
 		isLeftBlocked  = inputs[0]
 		isFrontBlocked = inputs[1]
@@ -206,8 +218,10 @@ class GenerateTrainingData():
 
 		return training_data, button
 
+	# Generate training data
 	def GenerateData(self):
-		self.WriteCSV("", "", headers = True)
+		logging.info("Generating training data.")
+		self.WriteCSV("", "", self.filename, headers = True)
 		training_data_x = []
 		training_data_y = []
 		training_games = 1000
@@ -229,34 +243,36 @@ class GenerateTrainingData():
 					break
 				
 				training_data_x = [isLeftBlocked, isFrontBlocked, isRightBlocked, normVector_apple[0], normVector_apple[1], normVector_snake[0], normVector_snake[1]]
-				self.WriteCSV(training_data_x, training_data_y)
+				self.WriteCSV(training_data_x, training_data_y, self.filename)
 				snake_pos, apple_pos, crashed = self.oGame.TrainGame(button)
 				if crashed:
 					break
 
 		return training_data_x, training_data_y
 	
-	def WriteCSV(self, x, y, headers = False):
-		with open(self.filename, 'a', newline = '') as csvfile:
-			writer = csv.writer(csvfile, delimiter=',')
-			# Write the headers to the first row
-			if headers:
-				writer.writerow(["isLeftBlocked", "isFrontBlocked", "isRightBlocked", "Apple_x", "Apple_y", "Snake_x", "Snake_y", "Left", "Front", "Right"])
-			else:
-				writer.writerow([x[0], x[1], x[2], x[3], x[4], x[5], x[6], y[0], y[1], y[2]])
-
+	def WriteCSV(self, x, y, filename, headers = False):
+		try:
+			with open(filename, 'a', newline = '') as csvfile:
+				writer = csv.writer(csvfile, delimiter=',')
+				# Write the headers to the first row
+				if headers:
+					writer.writerow(["isLeftBlocked", "isFrontBlocked", "isRightBlocked", "Apple_x", "Apple_y", "Snake_x", "Snake_y", "Left", "Front", "Right"])
+				else:
+					writer.writerow([x[0], x[1], x[2], x[3], x[4], x[5], x[6], y[0], y[1], y[2]])
+		except Exception as e:
+			print("Could not write data to CSV.")
+			logging.error("Could not write data to CSV.")
+			logging.error(repr(e))
+			
 class NeuralNetwork():
-	# def __init__(self):
-	# 	from keras.models import Sequential
-	# 	from keras.layers import Dense
-	# 	from keras.models import model_from_json
-		
+
 	def ExtractData(self, filename):
 		training_data_x = []
 		training_data_y = []
 		count = 0
 		with open(filename) as csv_file:
-			print("INFO: Extracting data...")
+			logging.info("Extracting training data from CSV file.")
+			print("-- Extracting data...")
 			csv_reader = csv.reader(csv_file, delimiter=',')
 			for row in csv_reader:
 				if count == 0:
@@ -268,33 +284,57 @@ class NeuralNetwork():
 							int(float(row[5])),int(float(row[6]))])
 					training_data_y.append([int(row[7]), int(row[8]), int(row[9])] )
 					# training_data_y.append([int(float(row[7][1])), int(float(row[7][4])), int(float(row[7][7]))] )
-		print("INFO: Data extracted.")
+		print("-- Data extracted.")
+		logging.info("Data extracted.")
 		return training_data_x, training_data_y
 	
 	def CreateModel(self, data):
-		print("INFO: Creating model...")
+		logging.info("Creating model.")
+		print("-- Creating model...")
+
+		if not os.path.exists(data):
+			return
+
 		training_data_x, training_data_y = self.ExtractData(data)
-		model = Sequential()
-		model.add(Dense(units=9,input_dim=7))
+		print(training_data_x)
+		if len(training_data_x) != 0:
+			model = Sequential()
+			model.add(Dense(units=9,input_dim=7))
 
-		model.add(Dense(units=15, activation='relu'))
-		model.add(Dense(output_dim=3,  activation = 'softmax'))
+			model.add(Dense(units=15, activation='relu'))
+			model.add(Dense(units=3,  activation = 'softmax'))
 
-		model.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
-		model.fit((np.array(training_data_x).reshape(-1,7)),( np.array(training_data_y).reshape(-1,3)), batch_size = 256,epochs= 3)
+			logging.info("Training model.")
+			model.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
+			model.fit((np.array(training_data_x).reshape(-1,7)),( np.array(training_data_y).reshape(-1,3)), batch_size = 256,epochs= 3)
 
-		model.save_weights('model.h5')
-		model_json = model.to_json()
-		with open('./Model/model.json', 'w') as json_file:
-			json_file.write(model_json)
-			print("INFO: Model created.")
-		return model
+			logging.info("Saving weights.")
+			model.save_weights('model.h5')
+			model_json = model.to_json()
+			try:
+				with open('./Model/model.json', 'w') as json_file:
+					json_file.write(model_json)
+					logging.info("Model created.")
+					print("-- Model created.")
+			except Exception as e:
+				print(f"Error writing to file.")
+				print(f"Error raised: {repr(e)}")
+
+			return model
 
 	def PlayAutonomous(self, model, weights):
-		json_file = open(model, 'r')
-		loaded_json_model = json_file.read()
-		model = model_from_json(loaded_json_model)
-		model.load_weights(weights)
+		logging.info("Starting autonomous play.")
+		try:
+			json_file = open(model, 'r')
+			loaded_json_model = json_file.read()
+			model = model_from_json(loaded_json_model)
+			model.load_weights(weights)
+		except Exception as e:
+			print("Failed to load model.")
+			logging.error("Failed to load model.")
+			logging.error(repr(e))
+			return
+
 		o_GenData = GenerateTrainingData()
 		o_Game = Snake()
 		
@@ -328,12 +368,25 @@ class NeuralNetwork():
 				break
 			
 			snake_pos, apple_pos, _ = o_Game.TrainGame(button)
-			print(step)
+			# print(step)
 
 #################################### MAIN ####################################
 if __name__ == "__main__":
+	### Uncomment the option you wish to use -- In the future, it will allow for selection in main menu
+
+	## To generate training data and create neural network model
 	# model = GenerateTrainingData()
 	# model.GenerateData()
+	# date_stamp = dt.datetime.now().strftime("%Y%m%d")
+	# file_count = 1
+	# filename = f"./Training Data/TrainingData_{date_stamp}"
+	# while os.path.isfile(f"{filename}_{file_count}.csv"):
+	# 	file_count += 1
+	# filename = f"{filename}_{file_count - 1}.csv"
+	# model = NeuralNetwork()
+	# model.CreateModel(f"{filename}")
+
+
+	## To run autonomously
 	model = NeuralNetwork()
-	# model.CreateModel("./Training Data/TrainingData_20200207_5.csv")
 	model.PlayAutonomous('./Model/model.json', './Model/model.h5')

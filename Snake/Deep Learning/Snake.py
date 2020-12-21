@@ -1,13 +1,25 @@
-############################### IMPORT PACKAGES ###############################
+"""
+Snake Game
+
+[brief summary] The code runs a modern recreation of the retro game Snake.
+				The purpose of the software is two-fold:
+					1. Create a fun & visual game using the pygame library
+					2. Train a neural network to learn to play the game autonomously
+				
+[author]        Loay Ajailat
+"""
+################################# IMPORT PACKAGES #################################
 import pygame
 import random
 import time 
 
-#################################### CLASS ####################################
+###################################### CLASS ######################################
 class Snake():
 	def __init__(self):
+		# Initialise pygame
 		if pygame.get_init:
 			pygame.init()
+		
 		# Screen Configs 
 		self.screen_width  = 500
 		self.screen_height = 500
@@ -15,18 +27,21 @@ class Snake():
 		self.screen_Main   = pygame.display.set_mode((self.screen_width, self.screen_height))
 		pygame.display.set_caption("Snake")
 		self.clock = pygame.time.Clock() # Game's framerate - speed
+		
 		# Colours
 		self.red   = (255, 0, 0)
 		self.white = (255, 255, 255)
 		self.black = (0, 0, 0)
 		self.blue  = (61, 112, 240)
+		
 		# Snake and apple coordinates
 		centre_x = int(self.screen_width/2)
 		x = [centre_x, centre_x - 10, centre_x - 20]
 		y = int(self.screen_height/2)
 		self.snake_head = [x[0], y]
-		self.snake_pos  = [[x[0], y], [x[1], y], [x[2], y]] #Starting length of the snake is 3 units where each unit is a 10×10 block
-		self.apple_pos = [random.randrange(1, int(self.screen_width/10))*10, random.randrange(10, int(self.screen_height/10))*10] #Random location
+		self.snake_pos  = [[x[0], y], [x[1], y], [x[2], y]] #Len of the snake is 3 units (each unit is a 10×10 block)
+		self.apple_pos = [random.randrange(1, int(self.screen_width/10))*10, random.randrange(10, int(self.screen_height/10))*10]
+		
 		# Directions
 		self.prevButton = 1
 		self.left  = 0
@@ -34,6 +49,7 @@ class Snake():
 		self.up    = 2
 		self.down  = 3
 		self.score = 0
+		
 		# States
 		self.quitGame = False
 		self.crashed = False
@@ -66,15 +82,13 @@ class Snake():
 
 	# Checks if the snake head collided with its own body 
 	def Collision_Self(self, snake_head, snake_pos):
-		# snake_head = snake_pos[0]
 		if snake_head in snake_pos[1:]:
 			return True
 		else:
 			return False
 
-	# Checks if the snake head collided with the apple
+	# Assigns the apple a random position on screen on collision and increases the score
 	def Collision_Apple(self):
-		# Assign the apple a random position on screen
 		self.apple_pos = [random.randrange(1, self.screen_width/10)*10, random.randrange(10, self.screen_height/10)*10]
 		self.score += 1
 
@@ -132,14 +146,16 @@ class Snake():
 		TextRect.center = (int(self.screen_width/2), int(self.screen_height/2))
 		self.screen_Main.blit(TextSurf, TextRect)
 		pygame.display.update()
-		# time.sleep(2)
 
 	# Sets flag that snake has crashed
 	def SetCrashed(self):
 		self.crashed = True
+
 	# Set flag to quit game
 	def QuitGame(self):
 		self.quitGame = True
+	
+	# Resets the game
 	def ResetGame(self):
 		self.quitGame = False
 		self.crashed  = False
@@ -156,50 +172,57 @@ class Snake():
 		prevDirection = 1
 		currentDirection = direction
 
-		while not self.quitGame:
-			while not self.crashed:
+		try:
+			while not self.quitGame:
+				while not self.crashed:
+					# PyGame event interaction
+					for event in pygame.event.get():
+						# Quits program
+						if event.type == pygame.QUIT:
+							self.SetCrashed()
+							self.QuitGame()
+						if event.type == pygame.KEYDOWN:
+							if event.key == pygame.K_ESCAPE:
+								self.SetCrashed()
+								self.QuitGame()
+						currentDirection = self.UpdateDirection(event, prevDirection)
+					if not self.quitGame:
+						self.screen_Main.fill(self.window_colour)
+						self.DrawApple(self.apple_pos)
+						self.DrawSnake(self.snake_pos)
+						self.MoveSnake(currentDirection)
+						# self.UpdatePosition()
+						self.UpdateDisplay()
+						prevDirection = currentDirection
+						if self.Collision_Boundary(self.snake_head) or self.Collision_Self(self.snake_head, self.snake_pos):
+							display_text = 'Your Score is: ' + str(self.score)
+							self.DisplayScore(display_text)
+							self.SetCrashed()
+						self.clock.tick(16) # Sets the framerate to 16
+				
 				# PyGame event interaction
 				for event in pygame.event.get():
 					# Quits program
 					if event.type == pygame.QUIT:
-						self.SetCrashed()
 						self.QuitGame()
 					if event.type == pygame.KEYDOWN:
 						if event.key == pygame.K_ESCAPE:
-							self.SetCrashed()
 							self.QuitGame()
-					currentDirection = self.UpdateDirection(event, prevDirection)
-				if not self.quitGame:
-					self.screen_Main.fill(self.window_colour)
-					self.DrawApple(self.apple_pos)
-					self.DrawSnake(self.snake_pos)
-					self.MoveSnake(currentDirection)
-					# self.UpdatePosition()
-					self.UpdateDisplay()
-					prevDirection = currentDirection
-					if self.Collision_Boundary(self.snake_head) or self.Collision_Self(self.snake_head, self.snake_pos):
-						display_text = 'Your Score is: ' + str(self.score)
-						self.DisplayScore(display_text)
-						self.SetCrashed()
-					self.clock.tick(16) # Sets the framerate to 16
-			# PyGame event interaction
-			for event in pygame.event.get():
-				# Quits program
-				if event.type == pygame.QUIT:
-					self.QuitGame()
-				if event.type == pygame.KEYDOWN:
-					if event.key == pygame.K_ESCAPE:
-						self.QuitGame()
-					if event.key == pygame.K_SPACE:
-						self.ResetGame()
+						if event.key == pygame.K_SPACE:
+							self.ResetGame()
 
-			if self.quitGame:
-				pygame.display.quit()
-				pygame.quit()
-			else:
-				display_text = 'Your Score is: ' + str(self.score)
-				self.DisplayScore(display_text)
+				if self.quitGame:
+					pygame.display.quit()
+					pygame.quit()
+				else:
+					display_text = 'Your Score is: ' + str(self.score)
+					self.DisplayScore(display_text)
+		except Exception as e:
+			print(f"Error: {e}")
+			text = "Error running game. Please restart."
+			self.DisplayScore(text)
 
+	# Train game
 	def TrainGame(self, direction = 1):
 		while not self.crashed:
 			crashed = False
