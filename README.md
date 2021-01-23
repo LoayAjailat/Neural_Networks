@@ -48,6 +48,7 @@ To increase/decrease the speed at which the game is run, change the value set in
         - Change framerate (speed of snake)
         - Change colour of snake, apple, and background
 4. Allow interrupting the training process
+5. Generate better training data to improve accuracy and achieve higher autonomous scores.
     
 ## Requirements
 1. numpy
